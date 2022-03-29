@@ -1,3 +1,4 @@
+import axios from "axios";
 import { useState } from "react";
 
 const Auth = () => {
@@ -7,12 +8,16 @@ const Auth = () => {
   const [confirmPassword, setConfirmPassword] = useState(null);
   const [error, setError] = useState(false);
 
-  const handleSubmit = () => {
-    console.log("submitted");
+  const handleSubmit = async () => {
     if (password !== confirmPassword) {
       setError(true);
       return;
     }
+    const response = await axios.post(`http://localhost:8000/signup`, {
+      username,
+      password,
+    });
+    console.log(response);
   };
 
   return (
@@ -43,7 +48,12 @@ const Auth = () => {
             />
           )}
           {error && <p> Make sure password match</p>}
-          <button onClick={handleSubmit}>Go!</button>
+          <button
+            className="standard-button"
+            onClick={() => handleSubmit(isLogin ? "login" : "signup")}
+          >
+            Go!
+          </button>
         </div>
         <div className="auth-options">
           <button
