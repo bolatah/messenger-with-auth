@@ -1,23 +1,33 @@
 import axios from "axios";
 import { useState } from "react";
+import { useCookies } from "react-cookie";
 
 const Auth = () => {
+  const [cookies, setCookie, removeCookie] = useCookies(["user"]);
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState(null);
   const [password, setPassword] = useState(null);
   const [confirmPassword, setConfirmPassword] = useState(null);
   const [error, setError] = useState(false);
 
-  const handleSubmit = async () => {
-    if (password !== confirmPassword) {
+  const handleSubmit = async (endpoint) => {
+    console.log(endpoint);
+    if (!isLogin && password !== confirmPassword) {
       setError(true);
       return;
     }
-    const response = await axios.post(`http://localhost:8000/signup`, {
+
+    const response = await axios.post(`http://localhost:8000/${endpoint}`, {
       username,
       password,
     });
-    console.log(response);
+
+    console.log(response, response.data.hashedPassword);
+    setCookie("Name", response.data.username);
+    setCookie("HashedPassword", response.data.hashedPassword);
+    setCookie("UserId", response.data.userId);
+    setCookie("AuthToken", response.data.token);
+    window.location.reload();
   };
 
   return (

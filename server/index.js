@@ -3,15 +3,13 @@ const express = require("express");
 const bcrypt = require("bcrypt");
 const { v1: uuidv1 } = require("uuid");
 const { connect } = require("getstream");
-//const StreamChat = require("stream-chat").StreamChat;
+const StreamChat = require("stream-chat").StreamChat;
 const app = express();
 const cors = require("cors");
 app.use(express.json());
 app.use(cors());
-const API_KEY = "xbcme9esbhgq";
-const API_SECRET =
-  "8scyfuxgzbhy9wfapw2t7c7uyqzc74uysvc8xmw7r2eye2f3eedkyzzgw8au5sgz";
-const APP_ID = "1177693";
+
+require("dotenv").config();
 
 //sign up
 app.post("/signup", async (req, res) => {
@@ -20,13 +18,49 @@ app.post("/signup", async (req, res) => {
 
     const userId = uuidv1();
     const hashedPassword = await bcrypt.hash(password, 10);
-    const client = connect(API_KEY, API_SECRET, APP_ID);
+    const client = connect(
+      process.env.API_KEY,
+      process.env.API_SECRET,
+      process.env.APP_ID
+    );
 
     const token = client.createUserToken(userId);
-    res.status(200).json({ username, password, hashedPassword, token });
-    console.log(req, username, password);
+    res.status(200).json({ username, userId, hashedPassword, token });
   } catch (error) {
     console.log(error);
+    res.status(500).json({ message: error });
+  }
+});
+
+// login
+app.post("/login", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const client = connect(
+      process.env.API_KEY,
+      process.env.API_SECRET,
+      process.env.APP_ID
+    );
+    const chatClient = StreamChat.getInstance(
+      process.env.API_KEY,
+      process.env.API_SECRET
+    );
+    const { users } = await chatClient.queryUsers({ name: username });
+
+    if (!users.length)
+      return res.json(400).json({ message: "User does not exist" });
+
+    const success = await bcrypt.compare(password, users[0].hashedPassword);
+    const token = client.createUserToken(users[0].id);
+    const confirmedName = users[0].name;
+    const userId = users[0].id;
+
+    if (success) {
+      res.status(200).json({ token, username: confirmedName, userId });
+    } else {
+      res.status(500).json({ message: "Login failed" });
+    }
+  } catch (error) {
     res.status(500).json({ message: error });
   }
 });
